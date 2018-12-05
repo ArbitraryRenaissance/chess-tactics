@@ -1,5 +1,23 @@
 import chess
 
+piece_dict = { # Maps pieces to their values
+'P':1,   # White pawn
+'R':5,   # White rook
+'N':3,   # White knight
+'B':3,   # White bishop
+'Q':9,   # White queen
+'K':100, # White king
+'.':0,   # Empty square
+'p':-1,  # Black pawn
+'r':-5,  # Black rook
+'n':-3,  # Black knight
+'b':-3,  # Black bishop
+'q':-9,  # Black queen
+'k':-100,# Black king
+' ':0,   # Aesthetic buffer value in string translation
+'\n':0,  # Similar to ^
+}
+
 def mate_in_one(position):
     '''
     Accepts a given chess position where there is potentially a mate in one
@@ -49,3 +67,21 @@ def mate_in_two(position):
         else:
             position.pop()
     return correct_move
+
+def simple_evaluate(position):
+    '''
+    Determines the value of the position by comparing piece value and
+    nothing more.  A higher evaluation value translates to a higher
+    advantage for white.
+    '''
+    r = position.result()
+    if r == '1-0':
+        return 9999 # White has won
+    elif r == '0-1':
+        return -9999 # Black has won
+    elif r == '1/2-1/2':
+        return 0 # Draw, regardless of piece value (to avoid stalemates)
+    board_val = 0
+    for c in str(position):
+        board_val += piece_dict[c]
+    return board_val
