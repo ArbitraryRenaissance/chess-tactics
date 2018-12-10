@@ -1,4 +1,5 @@
 import chess
+import numpy as np
 
 piece_dict = { # Maps pieces to their values
 'P':1,   # White pawn
@@ -17,6 +18,8 @@ piece_dict = { # Maps pieces to their values
 ' ':0,   # Aesthetic buffer value in string translation
 '\n':0,  # Similar to ^
 }
+position_table = {}
+
 
 def mate_in_one(position):
     '''
@@ -74,6 +77,12 @@ def simple_evaluate(position):
     nothing more.  A higher evaluation value translates to a higher
     advantage for white.
     '''
+    boardfen = position.fen()
+
+
+    if boardfen in position_table:
+        return position_table[boardfen]
+
     r = position.result()
     if r == '1-0':
         return 9999 # White has won
@@ -85,3 +94,59 @@ def simple_evaluate(position):
     for c in str(position):
         board_val += piece_dict[c]
     return board_val
+
+#returns the next state
+def MiniMaxAB(board, depth=3):
+    count = 0
+    if board.turn:
+        v = MaxValue(board,-np.inf,np.inf,depth,count)
+    else:
+        v = MinValue(board,-np.inf,np.inf,depth,count)
+    for x in board.legal_moves:
+        board.push(x)
+        if simple_evaluate(board) == v:
+            board.pop()
+            return x
+        else:
+            board.pop()
+
+
+def MaxValue(state,a,b,depth,count):
+    if count == 3:
+        return simple_evaluate(state)
+    if simple_evaluate(state) == 9999 or simple_evaluate(state) == -9999 or simple_evaluate(state) == 0:
+        return simple_evaluate(state)
+    v = -np.inf
+    for x in state.legal_moves:
+        state.push(x)
+        v = max(v,MinValue(state,a,b,depth,count))
+        state.pop()
+        if v >= b:
+            return v
+        a = max(a,v)
+    return v
+
+def MinValue(state,a,b,depth,count):
+    if count == 3:
+        return simple_evaluate(state)
+    if simple_evaluate(state) == 9999 or simple_evaluate(state) == -9999 or simple_evaluate(state) == 0:
+        return simple_evaluate(state)
+    v = np.inf
+    for x in state.legal_moves:
+        state.push(x)
+        v = min(v,MaxValue(state,a,b,depth,count))
+        state.pop()
+        if v <= a:
+            return v
+        b = min(b,v)
+    return v
+
+def main():
+    board = chess.Board("8/8/6Rp/1ppPk3/p3Pp2/2P1nP2/P6P/2K5 w - - 2 46")
+    init = board.turn
+    while(not(simple_evaluate(board) == 9999 or simple_evaluate(board) == -9999 or simple_evaluate(board) == 0)):
+        x = MiniMaxAB(board)
+        board.push(board.push(x))
+
+main()
+    
