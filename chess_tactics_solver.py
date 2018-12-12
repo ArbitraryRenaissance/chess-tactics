@@ -78,21 +78,23 @@ def simple_evaluate(position):
     advantage for white.
     '''
     boardfen = position.fen()
-
-
     if boardfen in position_table:
         return position_table[boardfen]
 
     r = position.result()
     if r == '1-0':
+        position_table[boardfen] = 9999
         return 9999 # White has won
     elif r == '0-1':
+        position_table[boardfen] = -9999
         return -9999 # Black has won
     elif r == '1/2-1/2':
+        position_table[boardfen] = 0
         return 0 # Draw, regardless of piece value (to avoid stalemates)
     board_val = 0
     for c in str(position):
         board_val += piece_dict[c]
+    position_table[boardfen] = board_val
     return board_val
 
 #returns the next state
@@ -112,31 +114,38 @@ def MiniMaxAB(board, depth=3):
 
 
 def MaxValue(state,a,b,depth,count):
-    if count == 3:
+    global position_table
+    if count == depth:
         return simple_evaluate(state)
-    if simple_evaluate(state) == 9999 or simple_evaluate(state) == -9999 or simple_evaluate(state) == 0:
-        return simple_evaluate(state)
+    current_evaluation = simple_evaluate(state)
+    if current_evaluation in [-9999,9999]:
+        return current_evaluation
     v = -np.inf
     for x in state.legal_moves:
         state.push(x)
-        v = max(v,MinValue(state,a,b,depth,count))
+        v = max(v,MinValue(state,a,b,depth,count+0.5))
         state.pop()
         if v >= b:
+            position_table[state.fen()] = v
             return v
         a = max(a,v)
+    position_table[state.fen()] = v
     return v
 
 def MinValue(state,a,b,depth,count):
-    if count == 3:
+    global position_table
+    if count == depth:
         return simple_evaluate(state)
-    if simple_evaluate(state) == 9999 or simple_evaluate(state) == -9999 or simple_evaluate(state) == 0:
-        return simple_evaluate(state)
+    current_evaluation = simple_evaluate(state)
+    if current_evaluation in [-9999,9999]:
+        return current_evaluation
     v = np.inf
     for x in state.legal_moves:
         state.push(x)
-        v = min(v,MaxValue(state,a,b,depth,count))
+        v = min(v,MaxValue(state,a,b,depth,count+0.5))
         state.pop()
         if v <= a:
+            position_table[state.fen()] = v
             return v
         b = min(b,v)
     return v
@@ -148,5 +157,4 @@ def main():
         x = MiniMaxAB(board)
         board.push(board.push(x))
 
-main()
-    
+#main()
