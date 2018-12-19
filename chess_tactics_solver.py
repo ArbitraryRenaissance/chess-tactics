@@ -99,9 +99,15 @@ def simple_evaluate(position):
     return board_val
 
 #returns the next state
-def MiniMaxAB(board,depth):
+def Heuristic_AB(board,depth):
     global position_table
-    v = AlphaBetaIterative(board,depth,-np.inf,np.inf)
+    position_table = {}
+    count = 0
+    if board.turn:
+        v = Max_Value(board,-np.inf,np.inf,depth,count)
+    else:
+        v = Min_Value(board,-np.inf,np.inf,depth,count)
+    position_table[board.fen()] = v
     for x in board.legal_moves:
         board.push(x)
         if (board.fen() in position_table and
@@ -111,102 +117,85 @@ def MiniMaxAB(board,depth):
         else:
             board.pop()
 
-def MaxValue(state,a,b,depth,count):
-    global position_table
-    if count == depth:
-        # We've reached the end
-        return simple_evaluate(state)
-    if state.fen() in position_table:
-        # We've been here before
-        return position_table[state.fen()]
-    if state.is_checkmate():
-        # We be mated
-        return simple_evaluate(state)
-    v = -np.inf
-    searchDomain = state.legal_moves
-    for x in searchDomain:
-        state.push(x)
-        v = max(v,MinValue(state,a,b,depth,count+0.5))
-        state.pop()
-        if v >= b:
-            position_table[state.fen()] = v
-            return v
-        a = max(a,v)
-    position_table[state.fen()] = v
-    return v
-
-def MinValue(state,a,b,depth,count):
-    global position_table
-    if count == depth:
-        # We've reached the end
-        v = simple_evaluate(state)
-        position_table[state.fen()] = v
+def Min_Value(board,a,b,depth,count):
+    if cutoff_test(board,depth,count):
+        v = simple_evaluate(board)
+        position_table[board.fen()] = v
         return v
-    if state.fen() in position_table:
-        # We've been here before
-        return position_table[state.fen()]
-    if state.is_checkmate():
-        # We be mated
-        return simple_evaluate(state)
     v = np.inf
-    searchDomain = state.legal_moves
-    for x in searchDomain:
-        state.push(x)
-        v = min(v,MaxValue(state,a,b,depth,count+0.5))
-        state.pop()
+    for move in board.legal_moves:
+        board.push(move)
+        v = min(v, Max_Value(board,a,b,depth,count+0.5) )
+        board.pop()
         if v <= a:
-            position_table[state.fen()] = v
+            position_table[board.fen()] = v
             return v
-        b = min(b,v)
+        b = min(b, v)
+    position_table[board.fen()] = v
     return v
 
-def AlphaBetaIterative(position, depth, a, b):
-    global position_table
-    if position.fen() in position_table:
-        return position_table[position.fen()]
-    '''
-    if a >= 3:
-        # White is definitely better: tactic found or blunder made
-        position_table[position.fen()] = a
-        return a
-    elif b <= -3:
-        # Black is definitely better
-        position_table[position.fen()] = b
-        return b
-    '''
-    maximizingPlayer = position.turn
-    if depth == 0 or position.is_checkmate():
-        return simple_evaluate(position)
-    if maximizingPlayer:
-        v = -np.inf
-        for m in position.legal_moves:
-            pcopy = position.copy()
-            pcopy.push(m)
-            v = max(v, AlphaBetaIterative(pcopy,depth-0.5,a,b))
-            if v >= b:
-                break # b cut-off
-            a = max(a,v)
-        position_table[position.fen()] = v
+def Max_Value(board,a,b,depth,count):
+    if cutoff_test(board,depth,count):
+        v = simple_evaluate(board)
+        position_table[board.fen()] = v
         return v
-    else:
-        v = np.inf
-        for m in position.legal_moves:
-            pcopy = position.copy()
-            pcopy.push(m)
-            v = min(v, AlphaBetaIterative(pcopy,depth-0.5,a,b))
-            if v <= a:
-                break # a cut-off
-            b = min(b,v)
-        position_table[position.fen()] = v
-        return v
+    v = -np.inf
+    for move in board.legal_moves:
+        board.push(move)
+        v = max(v, Min_Value(board,a,b,depth,count+0.5) )
+        board.pop()
+        if v >= b:
+            position_table[board.fen()] = v
+            return v
+        a = max(a, v)
+    position_table[board.fen()] = v
+    return v
+
+def cutoff_test(board,depth,count):
+    if count == depth: # If we're at the end of our search depth, stop
+        return True
+    if count % 1 == 0.5: # Never end on opponent's move
+        return False
+    if count == 0: # Consider the first position
+        return False 
+    current_evaluation = simple_evaluate(board)*(2*int(board.turn)-1)
+    # currently, cutoff_value equals the advantage that the current player
+    # has. Positions will be less likely to be searched if the player has a
+    # strong advantage.
+    net_potential = 0 # will aggregate the value of potential captures.
+    for move in board.legal_moves:
+        if board.is_capture(move):
+            piece_val = board.piece_type_at(move.to_square)
+            # queen = 5, rook = 4, bishop = 3, knight = 2, pawn = 1
+            if piece_val == 1:
+                net_potential += 1
+            elif piece_val in [2,3]:
+                net_potential += 3
+            elif piece_val == 4:
+                net_potential += 5
+            elif piece_val == 5:
+                net_potential += 9
+        board.push(move)
+        if board.is_check():
+            net_potential += 6
+        board.pop()
+    # Higher net_potential will be more likely to be searched.
+    distance_to_end = depth - count
+    evaluation_weight = float(current_evaluation)/distance_to_end
+    if evaluation_weight >= 1:
+        return True
+    potential_weight = net_potential * distance_to_end
+    if potential_weight >= 20:
+        return False
+    return (net_potential + current_evaluation)*distance_to_end <= 10
 
 
-def Solve(position):
+def Solve(position, depth):
     move = mate_in_two(position)
     if not move is None:
         return move
     else:
-        move = MiniMaxAB(position,2)
+        move = Heuristic_AB(position,depth)
     position.push(move)
     if position_table[position.fen()] in [-1,0,1]:
         print("Probably not the ideal move here, by the way ... ")
