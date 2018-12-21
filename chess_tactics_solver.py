@@ -1,4 +1,5 @@
 import chess
+import os
 import numpy as np
 
 piece_dict = { # Maps pieces to their values
@@ -185,7 +186,7 @@ def cutoff_test(board,depth,count):
     if evaluation_weight >= 1:
         return True
     potential_weight = net_potential * distance_to_end
-    if potential_weight >= 20:
+    if potential_weight >= 15:
         return False
     return (net_potential + current_evaluation)*distance_to_end <= 10
 
@@ -193,7 +194,7 @@ def cutoff_test(board,depth,count):
 def Solve(position, depth):
     move = mate_in_two(position)
     if not move is None:    #If there is a mate in two, just return the mate in two.
-        return move         #If not, we're going to try something else
+        return move         #If not, we're going to try some alpha beta stuff.
     else:
         move = Heuristic_AB(position,depth)
     position.push(move)
@@ -202,7 +203,7 @@ def Solve(position, depth):
     position.pop()
     return move
 
-def noobPrint(board):
+def noobPrint(board): #Adds numbers and letters to board. Not much here.
     fen = board.fen()
     index = 1
     nfen = ""
@@ -237,28 +238,31 @@ def main():
     noobPrint(board)
     inp = " "
     cont = 0
-    while(inp.lower() != "done"):
-        if cont % 2 == 0:
+    while(True):
+        if cont % 2 == 0: #cont is for player turn. So, its always AI to move and then player.
             print("Thinking...")
             mov = Solve(board, 3)
             board.push(mov)
             print("Moving:",mov)
             noobPrint(board)
             input("Please press enter to continue.")
+            os.system('cls' if os.name == 'nt' else 'clear')
         else:
             print("Please make a selection from the legal moves:")
             empty = 0
-            for move in board.legal_moves:
+            for move in board.legal_moves: #print moves
                 print(board.uci(move) + " ", end="")
                 empty+=1
-            if empty == 0:
+            print("")
+            if empty == 0: #if there are no more moves, game over.
                 print("no moves, game oger...")
                 break
             empty = 0
+            noobPrint(board)
             mov = input("\n")
             board.push(board.parse_uci(mov))
-            noobPrint(board)
             input("\nPlease press enter to continue.")
+            os.system('cls' if os.name == 'nt' else 'clear') #clears screen
         cont+=1
 main()
 
