@@ -192,8 +192,8 @@ def cutoff_test(board,depth,count):
 
 def Solve(position, depth):
     move = mate_in_two(position)
-    if not move is None:
-        return move
+    if not move is None:    #If there is a mate in two, just return the mate in two.
+        return move         #If not, we're going to try something else
     else:
         move = Heuristic_AB(position,depth)
     position.push(move)
@@ -202,12 +202,65 @@ def Solve(position, depth):
     position.pop()
     return move
 
+def noobPrint(board):
+    fen = board.fen()
+    index = 1
+    nfen = ""
+    for x in fen:
+        if x == " ":
+            break
+        else:
+            nfen += x
+    nfen = nfen[::-1]
+
+    for x in fen:
+        if x.isdigit():
+            for j in range(0,int(x)):
+                print(". ",end="")
+        elif x == "/":
+            print("" + str(9-index))
+            index+=1
+        elif x == " ":
+            break
+        else:
+            print(x,"",end="")
+    print("" + str(9-index))
+    print("a b c d e f g h")
+
+
+
 def main():
-    board = chess.Board("8/8/6Rp/1ppPk3/p3Pp2/2P1nP2/P6P/2K5 w - - 2 46")
-    init = board.turn
-    while(not(simple_evaluate(board) == 9999 or simple_evaluate(board) == -9999 or simple_evaluate(board) == 0)):
-        x = MiniMaxAB(board)
-        board.push(board.push(x))
+    print("Remember, black pieces are lowercase and white pieces are capital")
+    fen = input("Please enter a FEN: ")
+    board = chess.Board(fen)
+    print("INITIAL STATE: ")
+    noobPrint(board)
+    inp = " "
+    cont = 0
+    while(inp.lower() != "done"):
+        if cont % 2 == 0:
+            print("Thinking...")
+            mov = Solve(board, 3)
+            board.push(mov)
+            print("Moving:",mov)
+            noobPrint(board)
+            input("Please press enter to continue.")
+        else:
+            print("Please make a selection from the legal moves:")
+            empty = 0
+            for move in board.legal_moves:
+                print(board.uci(move) + " ", end="")
+                empty+=1
+            if empty == 0:
+                print("no moves, game oger...")
+                break
+            empty = 0
+            mov = input("\n")
+            board.push(board.parse_uci(mov))
+            noobPrint(board)
+            input("\nPlease press enter to continue.")
+        cont+=1
+main()
 
 # FENS that work:
 # 8/7p/5Bp1/P4p2/q1p1rNk1/6P1/5P1P/5RK1 w - - 1 35 (mate)
