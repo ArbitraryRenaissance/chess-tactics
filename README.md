@@ -24,7 +24,7 @@
     → Click the box that says ’Environment Variables...’
     → In the ’User variables for *username* ’ double click ’Path’
     → Select ’New’ → Enter path to python.exe → click ok x3
-    → Press home button→search for cmd → type ’python -m pip install python-chess’ into cmd.
+    → Press home button → search for cmd → type ’python -m pip install python-chess’ into cmd.
 
 ## How to use chess-tactics
 
