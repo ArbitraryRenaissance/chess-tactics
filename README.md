@@ -29,6 +29,6 @@
 ## How to use chess-tactics
 
 - Do a git clone or download from github
-- In CMD: cd into the folder with chesstacticssolver.py
-- In CMD run: ’python chesstacticssolver.py’
+- In CMD: cd into the folder with chess_tactics_solver.py
+- In CMD run: ’python chess_tactics_solver.py’
 - Take your FEN and copy it to where it asks
